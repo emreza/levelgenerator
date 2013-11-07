@@ -11,7 +11,7 @@ import dk.itu.mario.level.MyLevel;
 public class CustomizedLevelGenerator implements LevelGenerator{
 
 	public LevelInterface generateLevel(GamePlay playerMetrics) {
-		LevelInterface level = new MyLevel(100,15);
+		LevelInterface level = new MyLevel(300,15);
 		return level;
 	}
 
