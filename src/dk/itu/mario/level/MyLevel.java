@@ -11,20 +11,22 @@ import dk.itu.mario.engine.LevelFactory;
 
 public class MyLevel extends Level implements LevelInterface {
 
-	int[] heightMap,hardness;
-	double[] smoothHardness,prob;
-	boolean[] edge,pit;
+	int[] heightMap,difficulty;
+	double[] smoothDifficulty,prob;
+	boolean[] edge,pit,block,hill;
     public MyLevel(int width, int height) {
         super(width, height);  
         heightMap = new int[width];
-        hardness= new int[width];
-        smoothHardness = new double[width];
+        difficulty= new int[width];
+        smoothDifficulty = new double[width];
         prob = new double[width];
         edge =  new boolean[width];
         pit = new boolean[width];
+        block = new boolean[width];
+        hill = new boolean[width];
         for (int i=0;i<width;i++){
-        	edge[i]=pit[i]=false;
-        	hardness[i]=0;
+        	edge[i]=pit[i]=block[i]=false;
+        	difficulty[i]=0;
         }
         creat();
     }
@@ -34,8 +36,11 @@ public class MyLevel extends Level implements LevelInterface {
     	generatePits();
     	generatePlatform();
     	putTubes();
-    	computeSmoothHardness();
+    	computeSmoothDifficulty();
     	putEnemies();
+    	putBlocks();
+    	putCoins();
+    	generateHills();
         xExit=width-10;
         yExit=heightMap[xExit];
     }
@@ -83,14 +88,14 @@ public class MyLevel extends Level implements LevelInterface {
     				{
     				  pit[x]=pit[x+1]=pit[x+2]=true;    				  
     				  heightMap[x]=heightMap[x+1]=heightMap[x+2]=height;
-    				  hardness[x]=hardness[x]+2;
+    				  difficulty[x]=difficulty[x]+2;
     				  putRocks(x,x+2);
     				}
     			else if (rand<.4)
 				{
   				  pit[x]=pit[x+1]=true;
   				  heightMap[x]=heightMap[x+1]=height;
-  				  hardness[x]=hardness[x]+1;
+  				  difficulty[x]=difficulty[x]+1;
 				  putRocks(x,x+1);
   				}	
     		}
@@ -120,13 +125,16 @@ public class MyLevel extends Level implements LevelInterface {
     		setBlock(xend+2,heightMap[xend+2]-1,Level.ROCK);
     		setBlock(xend+1,heightMap[xend+1]-1,Level.ROCK);
     		setBlock(xend+1,heightMap[xend+1]-2,Level.ROCK);
-    		hardness[xstart]=hardness[xstart]+2;
+    		difficulty[xstart]=difficulty[xstart]+2;
+    		edge[xstart-2]=edge[xstart-1]=edge[xend+1]=edge[xend+2];
     	}
     	else if (rand<0.3)
     	{
     		setBlock(xstart-1,heightMap[xstart-1]-1,Level.ROCK);
     		setBlock(xend+1,heightMap[xend+1]-1,Level.ROCK);
-    		hardness[xstart]=hardness[xend]+1;
+    		difficulty[xstart]=difficulty[xend]+1;
+    		edge[xstart-1]=edge[xend+1];
+
     	}
     }
     
@@ -173,7 +181,7 @@ public class MyLevel extends Level implements LevelInterface {
     		if (checkTubeLocation(x))
     		{
     			rand=Math.random();
-    			if (rand<0.6 & heightMap[x]>8)
+    			if (rand<0.3 & heightMap[x]>8)
     			{
     				setBlock(x,heightMap[x]-1,Level.TUBE_SIDE_LEFT);
     				setBlock(x,heightMap[x]-2,Level.TUBE_TOP_LEFT);
@@ -185,7 +193,7 @@ public class MyLevel extends Level implements LevelInterface {
         			rand=Math.random()*(double)x/width;
         			if (rand>0.3)
         				setSpriteTemplate(x,heightMap[x]+1,new SpriteTemplate(Enemy.ENEMY_FLOWER,true));
-    				hardness[x]=hardness[x]+2;
+    				difficulty[x]=difficulty[x]+2;
     			}
 
     			
@@ -194,28 +202,28 @@ public class MyLevel extends Level implements LevelInterface {
     }
     
     
-    private void computeSmoothHardness(){
+    private void computeSmoothDifficulty(){
     	for (int x=1;x<width;x++){
-    		smoothHardness[0]=0;
-    		smoothHardness[x]=hardness[x]+0.8*smoothHardness[x-1];
+    		smoothDifficulty[0]=0;
+    		smoothDifficulty[x]=difficulty[x]+0.8*smoothDifficulty[x-1];
     	}
     }
     
     private void putEnemies(){
     	double rand,rand2;
-    	setBlock(10,heightMap[10]-4,Level.BLOCK_POWERUP);
-    	setBlock(11,heightMap[11]-4,Level.BLOCK_POWERUP);
-    	setBlock((int)Math.floor(width/4*3),heightMap[(int)Math.floor(width/4*3)]-4,Level.BLOCK_POWERUP);
+//    	setBlock(10,heightMap[10]-4,Level.BLOCK_POWERUP);
+//    	setBlock(11,heightMap[11]-4,Level.BLOCK_POWERUP);
+//    	setBlock((int)Math.floor(width/4*3),heightMap[(int)Math.floor(width/4*3)]-4,Level.BLOCK_POWERUP);
 
     	for (int x=10;x<width-30;x++){
-    		if (!pit[x])
+    		if (!pit[x]&!edge[x])
     		{
-    			prob[x]=computeCurve((double)x/width)/(1+smoothHardness[x]);
+    			prob[x]=computeCurve((double)x/width)/(1+smoothDifficulty[x]);
     			rand=Math.random()*prob[x];
     			if (rand>0.6)
     			{
     				setSpriteTemplate(x,heightMap[x]-1,new SpriteTemplate(Enemy.ENEMY_SPIKY,true));
-    				hardness[x]=hardness[x]+4;
+    				difficulty[x]=difficulty[x]+4;
     			}
     			else if (rand>0.5)
     			{
@@ -226,12 +234,12 @@ public class MyLevel extends Level implements LevelInterface {
     					setSpriteTemplate(x,heightMap[x]-1,new SpriteTemplate(Enemy.ENEMY_GREEN_KOOPA,true));
     				else
     					setSpriteTemplate(x,heightMap[x]-1,new SpriteTemplate(Enemy.ENEMY_RED_KOOPA,true));
-    				hardness[x]=hardness[x]+3;
+    				difficulty[x]=difficulty[x]+3;
     			}
     			else if (rand>0.4)
     			{
     				setSpriteTemplate(x,heightMap[x]-1,new SpriteTemplate(Enemy.ENEMY_SPIKY,false));
-    				hardness[x]=hardness[x]+2;
+    				difficulty[x]=difficulty[x]+2;
     			}
     			else if (rand>0.3)
     			{
@@ -242,10 +250,10 @@ public class MyLevel extends Level implements LevelInterface {
     					setSpriteTemplate(x,heightMap[x]-1,new SpriteTemplate(Enemy.ENEMY_GREEN_KOOPA,false));
     				else
     					setSpriteTemplate(x,heightMap[x]-1,new SpriteTemplate(Enemy.ENEMY_RED_KOOPA,false));
-    				hardness[x]=hardness[x]+1;
+    				difficulty[x]=difficulty[x]+1;
     			}	
     		}
-        	computeSmoothHardness();
+        	computeSmoothDifficulty();
     	}
     }
     private double computeCurve(double x){
@@ -259,6 +267,113 @@ public class MyLevel extends Level implements LevelInterface {
     	if (y<0) y=0;
     	return y;
     }
+    
+    
+    private double blockCurve(double x){
+    	double y;
+    	if (x<0.5)
+    		y=-20*Math.pow(x-0.25,2)+1;
+    	else
+    		y=-80*Math.pow(x-0.75,2)+1;
+    	if (y<0) y=0;
+    	return y;
+    }
+    
+    private void putBlocks()
+    {
+    	double rand;
+    	int length;
+    	for (int x=10;x<width-20;x++){
+    		if (!pit[x]&!edge[x]&!block[x]&!edge[x-1]&!pit[x-1]){
+    			rand = Math.random()*blockCurve((double)x/width);
+    			if (rand>.7){
+    				length=generateBlockLength(x);    				
+    				for (int i=x;i<x+length;i++){
+    					rand=Math.random();
+    					block[i]=true;
+    					if (rand>0.5)
+    						setBlock(i,heightMap[i]-4,Level.BLOCK_EMPTY);
+    					else if (rand>0.2)
+    						setBlock(i,heightMap[i]-4,Level.BLOCK_COIN);
+    					else
+    						setBlock(i,heightMap[i]-4,Level.BLOCK_POWERUP);
+    				}
+    			}
+    		}
+    	}
+    }
+    
+    private void putCoins()
+    {
+    	double rand;
+    	int length;
+    	for (int x=10;x<width-20;x++){
+    		if (!pit[x]&!edge[x]&!block[x]){
+    			rand = Math.random();
+    			if (rand>.8){
+    				length=generateBlockLength(x);    				
+    				for (int i=x;i<x+length;i++){
+    					setBlock(i,heightMap[i]-2,Level.COIN);
+    				}
+    			}
+    		}
+    	}
+    }
+    
+    
+    int generateBlockLength(int x){
+    	int length=0;
+    	int i=x;
+    	while (i<width-10 & !edge[i] & !pit[i]){
+    		i=i+1;
+    	    length=length+1;
+    	}
+    	double rand=Math.random();
+    	return (int)Math.floor((length-1)*rand);
+    }
+
+    private void generateHills(){
+    	double rand;
+    	for (int x=20;x<width-20;x++){
+    		if (heightMap[x]>8&!pit[x]&!hill[x]&!hill[x-1]&!edge[x]){
+    			rand=Math.random();
+    			if (rand<0.1){
+    				int length=checkLength(x);
+    				if (length>3){
+    					int height=(int)(heightMap[x]-Math.random()*2-2);
+    					setBlock(x,height,Level.HILL_TOP_LEFT);
+    					for (int y=height+1;y<heightMap[x];y++)
+    						setBlock(x,y,Level.HILL_LEFT);
+    					for (int i=x+1;i<x+length-1;i++){
+    						rand=Math.random();
+    						if (rand<0.5) setBlock(i,height-2,Level.COIN);
+    						setBlock(i,height,Level.HILL_TOP);
+    						for (int y=height+1;y<heightMap[i];y++)
+    							setBlock(i,y,Level.HILL_FILL);
+    						setBlock(x+length-1,height,Level.HILL_TOP_RIGHT);
+    						for (int y=height+1;y<heightMap[x+length-1];y++)
+    							setBlock(x+length-1,y,Level.HILL_RIGHT);
+    					}
+    					for (int i=x;i<x+length;i++) hill[i]=true;
+    				}
+    			}
+    		}
+    	}
+    }
+
+    private int checkLength(int x){
+    	int i=0;
+    	int length=5+(int)Math.random()*4;
+    	while (i<length&i<width-20){
+    		i=i+1;
+    		if (pit[x+i]|hill[x+i]|edge[x+i]|block[x+i])
+    			return 0;
+    	}
+    	return length;
+    }
+    
 }
+
+
 
   
